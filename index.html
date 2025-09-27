@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Teacher Student Firebase Demo</title>
+  <style>
+    body { font-family: Arial; padding:20px; }
+    input, button, select { padding:8px; margin:5px; }
+    .box { border:1px solid #aaa; padding:15px; margin:10px 0; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <h1>📚 Firebase Teacher-Student Demo</h1>
+
+  <!-- Role select -->
+  <select id="roleSelect">
+    <option value="teacher">Teacher</option>
+    <option value="student">Student</option>
+  </select>
+
+  <!-- Teacher Add Student -->
+  <div id="teacherBox" class="box">
+    <h3>👩‍🏫 Teacher: Add Student</h3>
+    <input id="stuName" placeholder="Student Name">
+    <input id="stuPass" placeholder="Student Password" type="password">
+    <button onclick="addStudent()">Add Student</button>
+  </div>
+
+  <!-- Student Login -->
+  <div id="studentBox" class="box" style="display:none;">
+    <h3>👨‍🎓 Student Login</h3>
+    <input id="loginName" placeholder="Student Name">
+    <input id="loginPass" placeholder="Password" type="password">
+    <button onclick="studentLogin()">Login</button>
+  </div>
+
+  <!-- Student Dashboard -->
+  <div id="studentDash" class="box" style="display:none;">
+    <h3>✅ Welcome <span id="stuDisplay"></span></h3>
+    <p>Your Data from Firebase:</p>
+    <pre id="stuData"></pre>
+  </div>
+
+  <h3>📌 All Students (Realtime)</h3>
+  <ul id="allStudents"></ul>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js"></script>
+  <script>
+    // 🔥 Apna Firebase config lagao (console se milega)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "XXXX",
+      appId: "XXXX"
+    };
+
+    // Init Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Role select toggle
+    document.getElementById("roleSelect").addEventListener("change", (e)=>{
+      if(e.target.value==="teacher"){
+        document.getElementById("teacherBox").style.display="block";
+        document.getElementById("studentBox").style.display="none";
+      } else {
+        document.getElementById("teacherBox").style.display="none";
+        document.getElementById("studentBox").style.display="block";
+      }
+    });
+
+    // Teacher add student
+    function addStudent(){
+      const name=document.getElementById("stuName").value.trim();
+      const pass=document.getElementById("stuPass").value.trim();
+      if(!name||!pass) return alert("Enter details ❌");
+
+      firebase.database().ref("students/"+name).set({
+        password: pass,
+        fee: 5000,   // Example data
+        marks: { math:90, science:80 } // Example data
+      }).then(()=>alert("Student added ✅"));
+    }
+
+    // Student login
+    function studentLogin(){
+      const name=document.getElementById("loginName").value.trim();
+      const pass=document.getElementById("loginPass").value.trim();
+      if(!name||!pass) return alert("Enter details ❌");
+
+      firebase.database().ref("students/"+name).once("value",(snap)=>{
+        const data=snap.val();
+        if(data && data.password===pass){
+          document.getElementById("stuDisplay").textContent=name;
+          document.getElementById("stuData").textContent=JSON.stringify(data,null,2);
+          document.getElementById("studentDash").style.display="block";
+        } else {
+          alert("Invalid login ❌");
+        }
+      });
+    }
+
+    // Realtime student list
+    firebase.database().ref("students").on("value",(snap)=>{
+      const data=snap.val();
+      const list=document.getElementById("allStudents");
+      list.innerHTML="";
+      for(const s in data){
+        const li=document.createElement("li");
+        li.textContent=`${s} | Fee: ₹${data[s].fee}`;
+        list.appendChild(li);
+      }
+    });
+  </script>
+</body>
+</html>
